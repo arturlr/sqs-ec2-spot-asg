@@ -1,0 +1,10 @@
+{
+    "TopicConfigurations": [
+        {
+            "QueueArn": "SQSQUEUEARN",
+            "Events": [
+                "s3:ObjectCreated:*"
+            ]
+        }
+    ]
+}

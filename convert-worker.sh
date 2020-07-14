@@ -36,25 +36,25 @@ while sleep 5; do
   FNAME=$(echo $INPUT | rev | cut -f2 -d"." | rev | tr '[:upper:]' '[:lower:]')
   FEXT=$(echo $INPUT | rev | cut -f1 -d"." | rev | tr '[:upper:]' '[:lower:]')
 
-  if [ "$FEXT" = "jpg" -o "$FEXT" = "png" -o "$FEXT" = "gif" ]; then
+  if [ "$FEXT" = "zip" -o "$FEXT" = "ZIP" ]; then
 
-    logger "$0: Found work to convert. Details: INPUT=$INPUT, FNAME=$FNAME, FEXT=$FEXT"
+    logger "$0: Found work. Details: INPUT=$INPUT, FNAME=$FNAME, FEXT=$FEXT"
 
     logger "$0: Running: aws autoscaling set-instance-protection --instance-ids $INSTANCE_ID --auto-scaling-group-name $AUTOSCALINGGROUP --protected-from-scale-in"
 
     aws autoscaling set-instance-protection --instance-ids $INSTANCE_ID --auto-scaling-group-name $AUTOSCALINGGROUP --protected-from-scale-in
 
-    aws s3 cp s3://$S3BUCKET/$INPUT /tmp
+    #aws s3 cp s3://$S3BUCKET/$INPUT /tmp
 
-    convert /tmp/$INPUT /tmp/$FNAME.pdf
+    #convert /tmp/$INPUT /tmp/$FNAME.pdf
 
-    logger "$0: Convert done. Copying to S3 and cleaning up"
+    #logger "$0: Convert done. Copying to S3 and cleaning up"
 
-    logger "$0: Running: aws s3 cp /tmp/$FNAME.pdf s3://$S3BUCKET"
+    #logger "$0: Running: aws s3 cp /tmp/$FNAME.pdf s3://$S3BUCKET"
 
-    aws s3 cp /tmp/$FNAME.pdf s3://$S3BUCKET
+    #aws s3 cp /tmp/$FNAME.pdf s3://$S3BUCKET
 
-    rm -f /tmp/$INPUT /tmp/$FNAME.pdf
+    #rm -f /tmp/$INPUT /tmp/$FNAME.pdf
 
     # pretend to do work for 60 seconds in order to catch the scale in protection
     sleep 60
@@ -69,7 +69,7 @@ while sleep 5; do
 
   else
 
-    logger "$0: Skipping message - file not of type jpg, png, or gif. Deleting message from queue"
+    logger "$0: Skipping message - file not of type zip. Deleting message from queue"
 
     aws sqs --output=json delete-message --queue-url $SQSQUEUE --receipt-handle $RECEIPT
 

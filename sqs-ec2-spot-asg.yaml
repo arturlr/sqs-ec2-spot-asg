@@ -43,10 +43,6 @@ Outputs:
     Description: Public subnet 2
     Value:
       Ref: publicSubnet2
-  s3BucketId:
-    Description: The S3 bucket ID
-    Value:
-      Ref: s3Bucket
   sqsQueueArn:
     Description: The SQS queue ARN
     Value:
@@ -58,6 +54,9 @@ Outputs:
     Value:
       Ref: vpc
 Parameters:
+  s3Bucket:
+    Type: String
+    Default: covid-app-bucket92620-dev
   amazonLinuxAmi:
     Type : 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
     Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
@@ -136,7 +135,7 @@ Resources:
           Namespace: AWS/SQS
           Statistic: Sum
           Unit: Count
-        TargetValue: 2
+        TargetValue: 1
     Type: AWS::AutoScaling::ScalingPolicy
   autoScalingServiceLinkedRole:
     Properties:
@@ -164,7 +163,6 @@ Resources:
   instanceRole:
     DependsOn:
     - sqsQueue
-    - s3Bucket
     Properties:
       AssumeRolePolicyDocument:
         Statement:
@@ -274,7 +272,6 @@ Resources:
   launchTemplate:
     DependsOn:
     - instanceProfile
-    - s3Bucket
     - sqsQueue
     - cloudWatchLogsGroup
     Properties:
@@ -300,10 +297,8 @@ Resources:
             Fn::Sub: '#!/bin/bash -xe
 
               yum -y install git
-
-              cd /root && git clone https://github.com/awslabs/ec2-spot-labs.git
-
-              REGION=${AWS::Region} S3BUCKET=${s3Bucket} SQSQUEUE=${sqsQueue} CLOUDWATCHLOGSGROUP=${cloudWatchLogsGroup}
+              cd /root && git clone https://github.com/arturlr/sqs-ec2-spot-asg.git
+              REGION=${AWS::Region} ACCOUNT=${AWS::AccountId} BUCKET={s3Bucket} SQSQUEUE=${sqsQueue} CLOUDWATCHLOGSGROUP=${cloudWatchLogsGroup}
               bash /root/sqs-ec2-spot-asg/user-data.sh
 
               '
@@ -407,19 +402,6 @@ Resources:
       SubnetId:
         Ref: publicSubnet2
     Type: AWS::EC2::SubnetRouteTableAssociation
-  s3Bucket:
-    DependsOn:
-    - sqsQueue
-    - sqsQueuePolicy
-    Properties:
-      NotificationConfiguration:
-        QueueConfigurations:
-        - Event: s3:ObjectCreated:*
-          Queue:
-            Fn::GetAtt:
-            - sqsQueue
-            - Arn
-    Type: AWS::S3::Bucket
   sqsQueue:
     Properties:
       VisibilityTimeout: 900

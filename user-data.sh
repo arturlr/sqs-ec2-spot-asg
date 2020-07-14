@@ -24,10 +24,15 @@ chmod +x /usr/local/bin/convert-worker.sh
 sed -i "s|us-east-1|$REGION|g" /etc/awslogs/awscli.conf
 sed -i "s|%CLOUDWATCHLOGSGROUP%|$CLOUDWATCHLOGSGROUP|g" /etc/awslogs/awslogs.conf
 sed -i "s|%REGION%|$REGION|g" /usr/local/bin/convert-worker.sh
-sed -i "s|%S3BUCKET%|$S3BUCKET|g" /usr/local/bin/convert-worker.sh
 sed -i "s|%SQSQUEUE%|$SQSQUEUE|g" /usr/local/bin/convert-worker.sh
 
 chkconfig awslogs on && service awslogs restart
+
+registry="${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com"
+aws ecr get-login-password --region $REGION | \
+    docker login --username AWS --password-stdin $registry
+docker pull ${registry}/covid-19-api:latest
+docker run --runtime nvidia -p 80:80 --restart always covid-19-api:latest
 
 start spot-instance-interruption-notice-handler
 start convert-worker
