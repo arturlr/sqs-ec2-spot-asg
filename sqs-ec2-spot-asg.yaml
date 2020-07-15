@@ -62,7 +62,7 @@ Parameters:
     Default: cic-vgh-yul
   amazonLinuxAmi:
     Type : 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
-    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-ecs-gpu-hvm-x86_64-ebs'    
   desiredCapacity:
     Default: 0
     Description: Desired capacity
@@ -301,8 +301,7 @@ Resources:
 
               cd /root && git clone https://github.com/arturlr/sqs-ec2-spot-asg.git
 
-              REGION=${AWS::Region} ACCOUNT=${AWS::AccountId} BUCKET=${s3Bucket} SQSQUEUE=${sqsQueue} CLOUDWATCHLOGSGROUP=${cloudWatchLogsGroup}
-              bash /root/sqs-ec2-spot-asg/user-data.sh
+              bash /root/sqs-ec2-spot-asg/user-data.sh ${AWS::Region} ${AWS::AccountId} ${s3Bucket} ${sqsQueue} ${cloudWatchLogsGroup}
 
               '
     Type: AWS::EC2::LaunchTemplate

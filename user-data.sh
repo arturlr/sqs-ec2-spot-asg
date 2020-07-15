@@ -1,7 +1,12 @@
 #!/bin/bash
-
 INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
 WORKING_DIR=/root/sqs-ec2-spot-asg
+
+REGION=$1
+ACCOUNT=$2
+BUCKET=$3
+SQSQUEUE=$4
+CLOUDWATCHLOGSGROUP=$5
 
 yum -y --security update
 
@@ -10,9 +15,9 @@ yum -y update aws-cli
 yum -y install \
   awslogs jq
 
-amazon-linux-extras install docker
-sudo usermod -a -G docker ec2-user
-service docker start
+#amazon-linux-extras install docker
+#sudo usermod -a -G docker ec2-user
+#service docker start
 
 echo "Region: $REGION"
 
