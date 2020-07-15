@@ -56,13 +56,15 @@ Outputs:
 Parameters:
   s3Bucket:
     Type: String
-    Default: covid-app-bucket92620-dev
+    Default: covid-bucket-app233508-dev
   Ec2KeyName:
     Type: String
     Default: cic-vgh-yul
   amazonLinuxAmi:
-    Type : 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
-    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-ecs-gpu-hvm-x86_64-ebs'    
+    Type: String 
+    Default: ami-0d38e97da1cd3342a
+    #Type : 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    #Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-ecs-gpu-hvm-x86_64-ebs'    
   desiredCapacity:
     Default: 0
     Description: Desired capacity
@@ -234,6 +236,29 @@ Resources:
           - '-'
           - - Ref: AWS::StackName
             - ec2DescribeTagsPolicy
+      - PolicyDocument:
+          Statement:
+          - Action:
+            - ecr:DescribeImageScanFindings
+            - ecr:GetLifecyclePolicyPreview
+            - ecr:GetDownloadUrlForLayer
+            - ecr:BatchGetImage
+            - ecr:DescribeImages
+            - ecr:GetAuthorizationToken
+            - ecr:DescribeRepositories
+            - ecr:ListTagsForResource
+            - ecr:ListImages
+            - ecr:BatchCheckLayerAvailability
+            - ecr:GetRepositoryPolicy
+            - ecr:GetLifecyclePolic
+            Effect: Allow
+            Resource: '*'
+          Version: '2012-10-17'
+        PolicyName:
+          Fn::Join:
+          - '-'
+          - - Ref: AWS::StackName
+            - ecrReadAndList
       - PolicyDocument:
           Statement:
           - Action:

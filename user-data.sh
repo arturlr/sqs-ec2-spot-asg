@@ -39,10 +39,9 @@ sed -i "s|%SQSQUEUE%|$SQSQUEUE|g" /usr/local/bin/convert-worker.sh
 
 chkconfig awslogs on && service awslogs restart
 
-registry="${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com"
-aws ecr get-login-password --region $REGION | \
-    docker login --username AWS --password-stdin $registry
-docker pull ${registry}/covid-19-api:latest
+REGISTRY="${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com"
+aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $REGISTRY
+docker pull ${REGISTRY}/covid-19-api:latest
 docker run --runtime nvidia -p 80:80 --restart always covid-19-api:latest
 
 start spot-instance-interruption-notice-handler
