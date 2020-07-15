@@ -8,7 +8,11 @@ yum -y --security update
 yum -y update aws-cli
 
 yum -y install \
-  awslogs jq ImageMagick
+  awslogs jq
+
+amazon-linux-extras install docker
+sudo usermod -a -G docker ec2-user
+service docker start
 
 aws configure set default.region $REGION
 

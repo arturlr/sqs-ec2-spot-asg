@@ -2,7 +2,7 @@
     "QueueConfigurations": [
         {
             "Id": "SQS-ASG",
-            "QueueArn": "SQSARN",
+            "QueueArn": "arn:aws:sqs:ca-central-1:900537753864:sqsasg-sqsQueue-FQQB73X7MZO",
             "Events": [
                 "s3:ObjectCreated:*"
             ]
