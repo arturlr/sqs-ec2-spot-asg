@@ -15,11 +15,7 @@ yum -y update aws-cli
 yum -y install \
   awslogs jq
 
-#amazon-linux-extras install docker
-#sudo usermod -a -G docker ec2-user
-#service docker start
-
-echo "Region: $REGION"
+echo "----------- Region: $REGION"
 
 aws configure set default.region $REGION
 
@@ -35,6 +31,7 @@ chmod +x /usr/local/bin/convert-worker.sh
 sed -i "s|us-east-1|$REGION|g" /etc/awslogs/awscli.conf
 sed -i "s|%CLOUDWATCHLOGSGROUP%|$CLOUDWATCHLOGSGROUP|g" /etc/awslogs/awslogs.conf
 sed -i "s|%REGION%|$REGION|g" /usr/local/bin/convert-worker.sh
+sed -i "s|%BUCKET%|$BUCKET|g" /usr/local/bin/convert-worker.sh
 sed -i "s|%SQSQUEUE%|$SQSQUEUE|g" /usr/local/bin/convert-worker.sh
 
 chkconfig awslogs on && service awslogs restart
@@ -42,7 +39,8 @@ chkconfig awslogs on && service awslogs restart
 REGISTRY="${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com"
 aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $REGISTRY
 docker pull ${REGISTRY}/covid-19-api:latest
-docker run --runtime nvidia -p 80:80 --restart always covid-19-api:latest
+docker tag ${REGISTRY}/covid-19-api:latest covid-19-api:latest
+docker run --runtime nvidia -p 80:80 -d --restart always covid-19-api:latest
 
 start spot-instance-interruption-notice-handler
 start convert-worker
