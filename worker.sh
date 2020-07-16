@@ -70,15 +70,33 @@ while sleep 5; do
 
     aws autoscaling set-instance-protection --instance-ids $INSTANCE_ID --auto-scaling-group-name $AUTOSCALINGGROUP --protected-from-scale-in
 
-    # create an encoded URL https://<bucket-name>.s3.amazonaws.com/<object or key name>
+    # Updating status
+    echo '{ "code": 0, "msg": "Processing"}' > /tmp/${INPUT}.status
+    aws s3 cp /tmp/${INPUT}.status s3://$S3BUCKET/$INPUT.status
 
-    # run curl - curl -X GET "http://localhost/predict/?input_file=https%3A%2F%2Fwww.dropbox.com%2Fs%2Fqw5kblwibm6wgwz%2Fsingle_series.zip%3Fdl%3D1&format=tiff" -H "accept: text/plain" -o /tmp/file.tiff
+    # Amplfy uses semicolon at the key and it gets encoded. This is for decode it
+    KEY=$(echo ${INPUT} | sed "s/%3A/:/")
 
-    # aws s3 cp s3://$S3BUCKET/$INPUT /tmp
+    # Create the encoding for the URL that will be sent to the model
+    URL="https://$S3BUCKET.s3.amazonaws.com/$KEY"
 
-    # echo { "code": 1, "msg": "Ready"} > /tmp/file.zip.status
+    ENCODED_URL=$(encode_url ${URL})
 
-    # aws s3 cp s3://$S3BUCKET/$INPUT /tmp
+    logger "$0: Start model processing"
+
+    # Submitting file to the model
+    curl - curl -X GET "http://localhost/predict/?input_file=${ENCODED_URL}&format=tiff" -H "accept: text/plain" -o /tmp/$FNAME.tiff
+
+    logger "$0: END model processing"
+
+    # saving result file
+    aws s3 cp /tmp/$FNAME.tiff s3://$S3BUCKET/$FNAME.tiff
+
+    logger "$0: $FNAME.tiff copied to bucket"
+
+    # Updating status
+    echo '{ "code": 0, "msg": "Processing"}' > /tmp/${INPUT}.status
+    aws s3 cp /tmp/${INPUT}.status s3://$S3BUCKET/$INPUT.status
 
     sleep 60
 

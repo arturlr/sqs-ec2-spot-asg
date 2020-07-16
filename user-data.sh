@@ -12,8 +12,10 @@ yum -y --security update
 
 yum -y update aws-cli
 
-yum -y install \
-  awslogs jq
+yum -y install awslogs jq
+
+# This fixes awslogsd.service error (ImportError: cannot import name _normalize_host)
+pip install --user sphinx
 
 echo "----------- Region: $REGION"
 
@@ -42,5 +44,5 @@ docker pull ${REGISTRY}/covid-19-api:latest
 docker tag ${REGISTRY}/covid-19-api:latest covid-19-api:latest
 docker run --runtime nvidia -p 80:80 --network 'host' -d --restart always covid-19-api:latest
 
-stsystemctl start spot-instance-interruption-notice-handler
+systemctl start spot-instance-interruption-notice-handler
 systemctl start worker
