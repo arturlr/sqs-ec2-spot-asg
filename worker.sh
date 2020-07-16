@@ -61,10 +61,13 @@ while sleep 5; do
   INPUT=$(echo "$BODY" | jq -r '.Records[0] | .s3.object.key')
   FNAME=$(basename $INPUT)
   FNAME_NO_SUFFIX="$(basename $INPUT .zip)"
-  FNAME_NO_SUFFIX_WITH_KEY=$(echo $INPUT | rev | cut -f2 -d"." | rev | tr '[:upper:]' '[:lower:]')
   FEXT=$(echo $INPUT | rev | cut -f1 -d"." | rev | tr '[:upper:]' '[:lower:]')
 
   if [ "$FEXT" = "zip" -o "$FEXT" = "ZIP" ]; then
+
+    # Amplfy uses semicolon at the key and it gets encoded. This is for decode it
+    S3KEY=$(echo ${INPUT} | sed "s/%3A/:/")
+    S3KEY_NO_SUFFIX=$(echo $INPUT | rev | cut -f2 -d"." | rev | tr '[:upper:]' '[:lower:]' | sed "s/%3A/:/")
 
     logger "$0: Found work. Details: INPUT=$INPUT, FNAME=$FNAME, FEXT=$FEXT"
 
@@ -74,10 +77,7 @@ while sleep 5; do
 
     # Updating status
     echo '{ "code": 0, "msg": "Processing"}' > /tmp/${FNAME}.status
-    aws s3 cp /tmp/${FNAME}.status s3://$S3BUCKET/$INPUT.status
-
-    # Amplfy uses semicolon at the key and it gets encoded. This is for decode it
-    KEY=$(echo ${INPUT} | sed "s/%3A/:/")
+    aws s3 cp /tmp/${FNAME}.status s3://$S3BUCKET/$S3KEY.status    
 
     # Create the encoding for the URL that will be sent to the model
     URL="https://$S3BUCKET.s3.amazonaws.com/$KEY"
@@ -87,18 +87,18 @@ while sleep 5; do
     logger "$0: Start model processing"
 
     # Submitting file to the model
-    curl - curl -X GET "http://localhost/predict/?input_file=${ENCODED_URL}&format=tiff" -H "accept: text/plain" -o /tmp/$FNAME_NO_SUFFIX.tiff
+    curl -X GET "http://localhost/predict/?input_file=${ENCODED_URL}&format=tiff" -H "accept: text/plain" -o /tmp/$FNAME_NO_SUFFIX.tiff
 
     logger "$0: END model processing"
 
     # saving result file
-    aws s3 cp /tmp/$FNAME_NO_SUFFIX.tiff s3://$S3BUCKET/$FNAME_NO_SUFFIX_WITH_KEY.tiff
+    aws s3 cp /tmp/$S3KEY_NO_SUFFIX.tiff s3://$S3BUCKET/$S3KEY_NO_SUFFIX.tiff
 
     logger "$0: $FNAME.tiff copied to bucket"
 
     # Updating status
     echo '{ "code": 0, "msg": "Processing"}' > /tmp/${FNAME}.status
-    aws s3 cp /tmp/${FNAME}.status s3://$S3BUCKET/$INPUT.status
+    aws s3 cp /tmp/${FNAME}.status s3://$S3BUCKET/$S3KEY.status
 
     # pretend to do work for 60 seconds in order to catch the scale in protection
     sleep 60

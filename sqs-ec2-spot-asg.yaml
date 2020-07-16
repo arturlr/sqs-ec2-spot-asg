@@ -104,8 +104,8 @@ Resources:
         Ref: minSize
       MixedInstancesPolicy:
         InstancesDistribution:
-          OnDemandBaseCapacity: 2
-          OnDemandPercentageAboveBaseCapacity: 0
+          OnDemandBaseCapacity: 1
+          OnDemandPercentageAboveBaseCapacity: 50
           SpotAllocationStrategy: capacity-optimized
         LaunchTemplate:
           LaunchTemplateSpecification:
