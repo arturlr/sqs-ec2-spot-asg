@@ -1,5 +1,31 @@
 #!/bin/bash
 
+encode_url () {
+  URL=$1
+  [ "${URL}x" == "x" ] && { URL="$(cat -)"; }
+
+  echo ${URL} | sed -e 's| |%20|g' \
+  -e 's|!|%21|g' \
+  -e 's|#|%23|g' \
+  -e 's|\$|%24|g' \
+  -e 's|%|%25|g' \
+  -e 's|&|%26|g' \
+  -e "s|'|%27|g" \
+  -e 's|(|%28|g' \
+  -e 's|)|%29|g' \
+  -e 's|*|%2A|g' \
+  -e 's|+|%2B|g' \
+  -e 's|,|%2C|g' \
+  -e 's|/|%2F|g' \
+  -e 's|:|%3A|g' \
+  -e 's|;|%3B|g' \
+  -e 's|=|%3D|g' \
+  -e 's|?|%3F|g' \
+  -e 's|@|%40|g' \
+  -e 's|\[|%5B|g' \
+  -e 's|]|%5D|g'
+}
+
 INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
 REGION=%REGION%
 S3BUCKET=%S3BUCKET%
@@ -44,19 +70,16 @@ while sleep 5; do
 
     aws autoscaling set-instance-protection --instance-ids $INSTANCE_ID --auto-scaling-group-name $AUTOSCALINGGROUP --protected-from-scale-in
 
-    #aws s3 cp s3://$S3BUCKET/$INPUT /tmp
+    # create an encoded URL https://<bucket-name>.s3.amazonaws.com/<object or key name>
 
-    #convert /tmp/$INPUT /tmp/$FNAME.pdf
+    # run curl - curl -X GET "http://localhost/predict/?input_file=https%3A%2F%2Fwww.dropbox.com%2Fs%2Fqw5kblwibm6wgwz%2Fsingle_series.zip%3Fdl%3D1&format=tiff" -H "accept: text/plain" -o /tmp/file.tiff
 
-    #logger "$0: Convert done. Copying to S3 and cleaning up"
+    # aws s3 cp s3://$S3BUCKET/$INPUT /tmp
 
-    #logger "$0: Running: aws s3 cp /tmp/$FNAME.pdf s3://$S3BUCKET"
+    # echo { "code": 1, "msg": "Ready"} > /tmp/file.zip.status
 
-    #aws s3 cp /tmp/$FNAME.pdf s3://$S3BUCKET
+    # aws s3 cp s3://$S3BUCKET/$INPUT /tmp
 
-    #rm -f /tmp/$INPUT /tmp/$FNAME.pdf
-
-    # pretend to do work for 60 seconds in order to catch the scale in protection
     sleep 60
 
     logger "$0: Running: aws sqs --output=json delete-message --queue-url $SQSQUEUE --receipt-handle $RECEIPT"
