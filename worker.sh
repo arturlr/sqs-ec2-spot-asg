@@ -59,7 +59,9 @@ while sleep 5; do
   logger "$0: Found $MESSAGES messages in $SQSQUEUE. Details: JSON=$JSON, RECEIPT=$RECEIPT, BODY=$BODY"
 
   INPUT=$(echo "$BODY" | jq -r '.Records[0] | .s3.object.key')
-  FNAME=$(echo $INPUT | rev | cut -f2 -d"." | rev | tr '[:upper:]' '[:lower:]')
+  FNAME=$(basename $INPUT)
+  FNAME_NO_SUFFIX="$(basename $INPUT .zip)"
+  FNAME_NO_SUFFIX_WITH_KEY=$(echo $INPUT | rev | cut -f2 -d"." | rev | tr '[:upper:]' '[:lower:]')
   FEXT=$(echo $INPUT | rev | cut -f1 -d"." | rev | tr '[:upper:]' '[:lower:]')
 
   if [ "$FEXT" = "zip" -o "$FEXT" = "ZIP" ]; then
@@ -71,8 +73,8 @@ while sleep 5; do
     aws autoscaling set-instance-protection --instance-ids $INSTANCE_ID --auto-scaling-group-name $AUTOSCALINGGROUP --protected-from-scale-in
 
     # Updating status
-    echo '{ "code": 0, "msg": "Processing"}' > /tmp/${INPUT}.status
-    aws s3 cp /tmp/${INPUT}.status s3://$S3BUCKET/$INPUT.status
+    echo '{ "code": 0, "msg": "Processing"}' > /tmp/${FNAME}.status
+    aws s3 cp /tmp/${FNAME}.status s3://$S3BUCKET/$INPUT.status
 
     # Amplfy uses semicolon at the key and it gets encoded. This is for decode it
     KEY=$(echo ${INPUT} | sed "s/%3A/:/")
@@ -85,19 +87,20 @@ while sleep 5; do
     logger "$0: Start model processing"
 
     # Submitting file to the model
-    curl - curl -X GET "http://localhost/predict/?input_file=${ENCODED_URL}&format=tiff" -H "accept: text/plain" -o /tmp/$FNAME.tiff
+    curl - curl -X GET "http://localhost/predict/?input_file=${ENCODED_URL}&format=tiff" -H "accept: text/plain" -o /tmp/$FNAME_NO_SUFFIX.tiff
 
     logger "$0: END model processing"
 
     # saving result file
-    aws s3 cp /tmp/$FNAME.tiff s3://$S3BUCKET/$FNAME.tiff
+    aws s3 cp /tmp/$FNAME_NO_SUFFIX.tiff s3://$S3BUCKET/$FNAME_NO_SUFFIX_WITH_KEY.tiff
 
     logger "$0: $FNAME.tiff copied to bucket"
 
     # Updating status
-    echo '{ "code": 0, "msg": "Processing"}' > /tmp/${INPUT}.status
-    aws s3 cp /tmp/${INPUT}.status s3://$S3BUCKET/$INPUT.status
+    echo '{ "code": 0, "msg": "Processing"}' > /tmp/${FNAME}.status
+    aws s3 cp /tmp/${FNAME}.status s3://$S3BUCKET/$INPUT.status
 
+    # pretend to do work for 60 seconds in order to catch the scale in protection
     sleep 60
 
     logger "$0: Running: aws sqs --output=json delete-message --queue-url $SQSQUEUE --receipt-handle $RECEIPT"

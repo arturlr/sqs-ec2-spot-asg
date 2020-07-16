@@ -70,7 +70,7 @@ Parameters:
     Description: Desired capacity
     Type: Number
   maxSize:
-    Default: 12
+    Default: 4
     Description: Maximum capacity
     Type: Number
   minSize:
@@ -104,7 +104,7 @@ Resources:
         Ref: minSize
       MixedInstancesPolicy:
         InstancesDistribution:
-          OnDemandBaseCapacity: 0
+          OnDemandBaseCapacity: 2
           OnDemandPercentageAboveBaseCapacity: 0
           SpotAllocationStrategy: capacity-optimized
         LaunchTemplate:
@@ -113,8 +113,9 @@ Resources:
               Ref: launchTemplate
             Version: 1
           Overrides:
-          - InstanceType: p3.2xlarge
           - InstanceType: g4dn.xlarge
+          - InstanceType: g4dn.2xlarge
+          - InstanceType: g4dn.4xlarge
       VPCZoneIdentifier:
       - Ref: publicSubnet1
       - Ref: publicSubnet2
