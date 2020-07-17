@@ -59,6 +59,7 @@ while sleep 5; do
   logger "$0: Found $MESSAGES messages in $SQSQUEUE. Details: JSON=$JSON, RECEIPT=$RECEIPT, BODY=$BODY"
 
   INPUT=$(echo "$BODY" | jq -r '.Records[0] | .s3.object.key')
+  S3TMP=$(echo $INPUT | rev | cut -f2 -d"." | rev | tr '[:upper:]' '[:lower:]')
   FNAME=$(basename $INPUT)
   FNAME_NO_SUFFIX="$(basename $INPUT .zip)"
   FEXT=$(echo $INPUT | rev | cut -f1 -d"." | rev | tr '[:upper:]' '[:lower:]')
@@ -67,7 +68,7 @@ while sleep 5; do
 
     # Amplfy uses semicolon at the key and it gets encoded. This is for decode it
     S3KEY=$(echo ${INPUT} | sed "s/%3A/:/")
-    S3KEY_NO_SUFFIX=$(echo $INPUT | rev | cut -f2 -d"." | rev | tr '[:upper:]' '[:lower:]' | sed "s/%3A/:/")
+    S3KEY_NO_SUFFIX=$(echo ${S3TMP} | sed "s/%3A/:/")
 
     logger "$0: Found work. Details: INPUT=$INPUT, FNAME=$FNAME, FEXT=$FEXT"
 
@@ -87,14 +88,14 @@ while sleep 5; do
     logger "$0: Start model processing"
 
     # Submitting file to the model
-    curl -X GET "http://localhost/predict/?input_file=${ENCODED_URL}&format=tiff" -H "accept: text/plain" -o /tmp/$S3KEY_NO_SUFFIX.tiff
+    curl -X GET "http://localhost/predict/?input_file=${ENCODED_URL}&format=tiff" -H "accept: text/plain" -o /tmp/$FNAME_NO_SUFFIX.tiff
 
     logger "$0: END model processing"
 
     # saving result file
-    aws s3 cp /tmp/$S3KEY_NO_SUFFIX.tiff s3://$S3BUCKET/$S3KEY_NO_SUFFIX.tiff
+    aws s3 cp /tmp/$FNAME_NO_SUFFIX.tiff s3://$S3BUCKET/$S3KEY_NO_SUFFIX.tiff
 
-    logger "$0: $FNAME.tiff copied to bucket"
+    logger "$0: $FNAME_NO_SUFFIX.tiff copied to bucket"
 
     # Updating status
     echo '{ "code": 0, "msg": "Processing"}' > /tmp/${FNAME}.status
