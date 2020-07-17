@@ -30,14 +30,13 @@ update_status () {
 
     CODE=$1
     MSG=$2
-    echo "{ \"code\": $CODE, \"msg\": $MSG }" > /tmp/${FNAME}.status    
+    echo "{ \"code\": $CODE, \"msg\": \"$MSG\" }" > /tmp/${FNAME}.status    
     aws s3 cp /tmp/${FNAME}.status s3://$S3BUCKET/$INPUT.status
 
 }
 
 INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
 REGION=%REGION%
-S3BUCKET=%S3BUCKET%
 SQSQUEUE=%SQSQUEUE%
 AUTOSCALINGGROUP=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE_ID" "Name=key,Values=aws:autoscaling:groupName" | jq -r '.Tags[0].Value')
 
@@ -67,7 +66,7 @@ while sleep 5; do
 
   logger "$0: Found $MESSAGES messages in $SQSQUEUE. Details: JSON=$JSON, RECEIPT=$RECEIPT, BODY=$BODY"
 
-  BUCKET=$(echo "$BODY" | jq -r '.Records[0] | .s3.bucket.name')
+  S3BUCKET=$(echo "$BODY" | jq -r '.Records[0] | .s3.bucket.name')
   # Amplfy uses semicolon at the key and it gets encoded. (private/ca-central-1%3A383697a4-1427-4fd8-bb4c-8ff3705f5a00/file.zip)
   INPUT=$(echo "$BODY" | jq -r '.Records[0] | .s3.object.key' | tr '[:upper:]' '[:lower:]' | sed "s/%3a/:/")  
   S3KEY_NO_SUFFIX=$(echo $INPUT | rev | cut -f2 -d"." | rev)
