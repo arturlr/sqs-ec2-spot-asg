@@ -140,7 +140,7 @@ Resources:
           Namespace: AWS/SQS
           Statistic: Sum
           Unit: Count
-        TargetValue: 1
+        TargetValue: 2
     Type: AWS::AutoScaling::ScalingPolicy
   autoScalingServiceLinkedRole:
     Properties:

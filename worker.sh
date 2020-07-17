@@ -26,6 +26,15 @@ encode_url () {
   -e 's|]|%5D|g'
 }
 
+update_status () {
+
+    CODE=$1
+    MSG=$2
+    echo "{ \"code\": $CODE, \"msg\": $MSG }" > /tmp/${FNAME}.status    
+    # aws s3 cp /tmp/${FNAME}.status s3://$S3BUCKET/$S3KEY.status
+
+}
+
 INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
 REGION=%REGION%
 S3BUCKET=%S3BUCKET%
@@ -70,15 +79,14 @@ while sleep 5; do
     S3KEY=$(echo ${INPUT} | sed "s/%3A/:/")
     S3KEY_NO_SUFFIX=$(echo ${S3TMP} | sed "s/%3A/:/")
 
-    logger "$0: Found work. Details: INPUT=$INPUT, FNAME=$FNAME, FEXT=$FEXT"
+    logger "$0: Found work. Details: INPUT=$INPUT, FNAME=$FNAME, FNAME_NO_SUFFIX=$FNAME_NO_SUFFIX, FEXT=$FEXT, S3KEY=$S3KEY, S3KEY_NO_SUFFIX=$S3KEY_NO_SUFFIX"
 
     logger "$0: Running: aws autoscaling set-instance-protection --instance-ids $INSTANCE_ID --auto-scaling-group-name $AUTOSCALINGGROUP --protected-from-scale-in"
 
     aws autoscaling set-instance-protection --instance-ids $INSTANCE_ID --auto-scaling-group-name $AUTOSCALINGGROUP --protected-from-scale-in
 
     # Updating status
-    echo '{ "code": 0, "msg": "Processing"}' > /tmp/${FNAME}.status
-    aws s3 cp /tmp/${FNAME}.status s3://$S3BUCKET/$S3KEY.status    
+    update_status "0" Processing
 
     # Create the encoding for the URL that will be sent to the model
     URL="https://$S3BUCKET.s3.amazonaws.com/$KEY"
@@ -98,8 +106,7 @@ while sleep 5; do
     logger "$0: $FNAME_NO_SUFFIX.tiff copied to bucket"
 
     # Updating status
-    echo '{ "code": 0, "msg": "Processing"}' > /tmp/${FNAME}.status
-    aws s3 cp /tmp/${FNAME}.status s3://$S3BUCKET/$S3KEY.status
+    update_status "1" Ready
 
     # pretend to do work for 60 seconds in order to catch the scale in protection
     sleep 60
