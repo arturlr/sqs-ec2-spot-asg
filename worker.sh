@@ -31,7 +31,7 @@ update_status () {
     CODE=$1
     MSG=$2
     echo "{ \"code\": $CODE, \"msg\": $MSG }" > /tmp/${FNAME}.status    
-    # aws s3 cp /tmp/${FNAME}.status s3://$S3BUCKET/$S3KEY.status
+    aws s3 cp /tmp/${FNAME}.status s3://$S3BUCKET/$INPUT.status
 
 }
 
@@ -67,19 +67,17 @@ while sleep 5; do
 
   logger "$0: Found $MESSAGES messages in $SQSQUEUE. Details: JSON=$JSON, RECEIPT=$RECEIPT, BODY=$BODY"
 
-  INPUT=$(echo "$BODY" | jq -r '.Records[0] | .s3.object.key')
-  S3TMP=$(echo $INPUT | rev | cut -f2 -d"." | rev | tr '[:upper:]' '[:lower:]')
+  BUCKET=$(echo "$BODY" | jq -r '.Records[0] | .s3.bucket.name')
+  # Amplfy uses semicolon at the key and it gets encoded. (private/ca-central-1%3A383697a4-1427-4fd8-bb4c-8ff3705f5a00/file.zip)
+  INPUT=$(echo "$BODY" | jq -r '.Records[0] | .s3.object.key' | tr '[:upper:]' '[:lower:]' | sed "s/%3a/:/")  
+  S3KEY_NO_SUFFIX=$(echo $INPUT | rev | cut -f2 -d"." | rev)
   FNAME=$(basename $INPUT)
   FNAME_NO_SUFFIX="$(basename $INPUT .zip)"
-  FEXT=$(echo $INPUT | rev | cut -f1 -d"." | rev | tr '[:upper:]' '[:lower:]')
+  FEXT=$(echo $INPUT | rev | cut -f1 -d"." | rev)
 
-  if [ "$FEXT" = "zip" -o "$FEXT" = "ZIP" ]; then
+  if [ "$FEXT" = "zip" ]; then
 
-    # Amplfy uses semicolon at the key and it gets encoded. This is for decode it
-    S3KEY=$(echo ${INPUT} | sed "s/%3A/:/")
-    S3KEY_NO_SUFFIX=$(echo ${S3TMP} | sed "s/%3A/:/")
-
-    logger "$0: Found work. Details: INPUT=$INPUT, FNAME=$FNAME, FNAME_NO_SUFFIX=$FNAME_NO_SUFFIX, FEXT=$FEXT, S3KEY=$S3KEY, S3KEY_NO_SUFFIX=$S3KEY_NO_SUFFIX"
+    logger "$0: Found work. Details: INPUT=$INPUT, FNAME=$FNAME, FNAME_NO_SUFFIX=$FNAME_NO_SUFFIX, FEXT=$FEXT, S3KEY_NO_SUFFIX=$S3KEY_NO_SUFFIX, KEY_NO_FILE=$KEY_NO_FILE, BUCKET=$BUCKET"
 
     logger "$0: Running: aws autoscaling set-instance-protection --instance-ids $INSTANCE_ID --auto-scaling-group-name $AUTOSCALINGGROUP --protected-from-scale-in"
 
@@ -89,7 +87,7 @@ while sleep 5; do
     update_status "0" Processing
 
     # Create the encoding for the URL that will be sent to the model
-    URL="https://$S3BUCKET.s3.amazonaws.com/$KEY"
+    URL="https://$S3BUCKET.s3.amazonaws.com/$INPUT"
 
     ENCODED_URL=$(encode_url ${URL})
 
