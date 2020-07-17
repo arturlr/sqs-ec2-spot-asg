@@ -87,7 +87,7 @@ while sleep 5; do
     logger "$0: Start model processing"
 
     # Submitting file to the model
-    curl -X GET "http://localhost/predict/?input_file=${ENCODED_URL}&format=tiff" -H "accept: text/plain" -o /tmp/$FNAME_NO_SUFFIX.tiff
+    curl -X GET "http://localhost/predict/?input_file=${ENCODED_URL}&format=tiff" -H "accept: text/plain" -o /tmp/$S3KEY_NO_SUFFIX.tiff
 
     logger "$0: END model processing"
 
