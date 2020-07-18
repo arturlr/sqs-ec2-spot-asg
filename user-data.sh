@@ -12,7 +12,7 @@ yum -y --security update
 
 yum -y update aws-cli
 
-yum -y install awslogs jq
+yum -y install awslogs jq imagemagick
 
 # This fixes awslogsd.service error (ImportError: cannot import name _normalize_host)
 pip install --user sphinx

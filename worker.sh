@@ -1,37 +1,22 @@
 #!/bin/bash
 
-encode_url () {
-  URL=$1
-  [ "${URL}x" == "x" ] && { URL="$(cat -)"; }
+urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 
-  echo ${URL} | sed -e 's| |%20|g' \
-  -e 's|!|%21|g' \
-  -e 's|#|%23|g' \
-  -e 's|\$|%24|g' \
-  -e 's|%|%25|g' \
-  -e 's|&|%26|g' \
-  -e "s|'|%27|g" \
-  -e 's|(|%28|g' \
-  -e 's|)|%29|g' \
-  -e 's|*|%2A|g' \
-  -e 's|+|%2B|g' \
-  -e 's|,|%2C|g' \
-  -e 's|/|%2F|g' \
-  -e 's|:|%3A|g' \
-  -e 's|;|%3B|g' \
-  -e 's|=|%3D|g' \
-  -e 's|?|%3F|g' \
-  -e 's|@|%40|g' \
-  -e 's|\[|%5B|g' \
-  -e 's|]|%5D|g'
+urlencode() {
+	local LANG=C i c e=''
+	for ((i=0;i<${#1};i++)); do
+                c=${1:$i:1}
+		[[ "$c" =~ [a-zA-Z0-9\.\~\_\-] ]] || printf -v c '%%%02X' "'$c"
+                e+="$c"
+	done
+        echo "$e"
 }
 
 update_status () {
-
     CODE=$1
     MSG=$2
     echo "{ \"code\": $CODE, \"msg\": \"$MSG\" }" > /tmp/${FNAME}.status    
-    aws s3 cp /tmp/${FNAME}.status s3://$S3BUCKET/$INPUT.status
+    aws s3 cp /tmp/${FNAME}.status s3://$S3BUCKET/$S3KEY.status
 
 }
 
@@ -67,16 +52,17 @@ while sleep 5; do
   logger "$0: Found $MESSAGES messages in $SQSQUEUE. Details: JSON=$JSON, RECEIPT=$RECEIPT, BODY=$BODY"
 
   S3BUCKET=$(echo "$BODY" | jq -r '.Records[0] | .s3.bucket.name')
-  # Amplfy uses semicolon at the key and it gets encoded. (private/ca-central-1%3A383697a4-1427-4fd8-bb4c-8ff3705f5a00/file.zip)
-  INPUT=$(echo "$BODY" | jq -r '.Records[0] | .s3.object.key' | tr '[:upper:]' '[:lower:]' | sed "s/%3a/:/")  
-  S3KEY_NO_SUFFIX=$(echo $INPUT | rev | cut -f2 -d"." | rev)
-  FNAME=$(basename $INPUT)
-  FNAME_NO_SUFFIX="$(basename $INPUT .zip)"
-  FEXT=$(echo $INPUT | rev | cut -f1 -d"." | rev)
+  INPUT=$(echo "$BODY" | jq -r '.Records[0] | .s3.object.key')
+  S3KEY=$(urldecode $INPUT | tr '[:upper:]' '[:lower:]')
+
+  S3KEY_NO_SUFFIX=$(echo $S3KEY | rev | cut -f2 -d"." | rev)
+  FNAME=$(basename $S3KEY)
+  FNAME_NO_SUFFIX="$(basename $S3KEY .zip)"
+  FEXT=$(echo $S3KEY | rev | cut -f1 -d"." | rev)
 
   if [ "$FEXT" = "zip" ]; then
 
-    logger "$0: Found work. Details: INPUT=$INPUT, FNAME=$FNAME, FNAME_NO_SUFFIX=$FNAME_NO_SUFFIX, FEXT=$FEXT, S3KEY_NO_SUFFIX=$S3KEY_NO_SUFFIX, KEY_NO_FILE=$KEY_NO_FILE, BUCKET=$BUCKET"
+    logger "$0: Found work. Details: S3KEY=$S3KEY, FNAME=$FNAME, FNAME_NO_SUFFIX=$FNAME_NO_SUFFIX, FEXT=$FEXT, S3KEY_NO_SUFFIX=$S3KEY_NO_SUFFIX"
 
     logger "$0: Running: aws autoscaling set-instance-protection --instance-ids $INSTANCE_ID --auto-scaling-group-name $AUTOSCALINGGROUP --protected-from-scale-in"
 
@@ -86,7 +72,7 @@ while sleep 5; do
     update_status "0" Processing
 
     # Create the encoding for the URL that will be sent to the model
-    URL="https://$S3BUCKET.s3.amazonaws.com/$INPUT"
+    URL="https://$S3BUCKET.s3.amazonaws.com/$S3KEY"
 
     ENCODED_URL=$(encode_url ${URL})
 
