@@ -70,7 +70,7 @@ Parameters:
     Description: Desired capacity
     Type: Number
   maxSize:
-    Default: 4
+    Default: 2
     Description: Maximum capacity
     Type: Number
   minSize:
