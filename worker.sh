@@ -74,11 +74,12 @@ while sleep 5; do
     # Create the encoding for the URL that will be sent to the model
     URL="https://$S3BUCKET.s3.amazonaws.com/$S3KEY"
 
-    ENCODED_URL=$(encode_url ${URL})
+    ENCODED_URL=$(urlencode ${URL})
 
     logger "$0: Start model processing"
 
     # Submitting file to the model
+    logger "$0: http://localhost/predict/?input_file=${ENCODED_URL}&format=tiff""
     curl -X GET "http://localhost/predict/?input_file=${ENCODED_URL}&format=tiff" -H "accept: text/plain" -o /tmp/$FNAME_NO_SUFFIX.tiff
 
     logger "$0: END model processing"

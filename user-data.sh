@@ -17,7 +17,7 @@ yum -y install awslogs jq imagemagick
 # This fixes awslogsd.service error (ImportError: cannot import name _normalize_host)
 pip install --user sphinx
 
-echo "----------- Region: $REGION"
+echo "----------------------- user-data"
 
 aws configure set default.region $REGION
 
