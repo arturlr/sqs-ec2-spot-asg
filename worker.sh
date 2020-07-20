@@ -17,6 +17,44 @@ update_status () {
     MSG=$2
     echo "{ \"code\": $CODE, \"msg\": \"$MSG\" }" > /tmp/${FNAME}.status    
     aws s3 cp /tmp/${FNAME}.status s3://$S3BUCKET/$S3KEY.status
+}
+
+process_file () {
+    
+    logger "$0: Running: aws autoscaling set-instance-protection --instance-ids $INSTANCE_ID --auto-scaling-group-name $AUTOSCALINGGROUP --protected-from-scale-in"
+    aws autoscaling set-instance-protection --instance-ids $INSTANCE_ID --auto-scaling-group-name $AUTOSCALINGGROUP --protected-from-scale-in
+
+    # Updating status
+    update_status "1" Processing
+
+    # Copying the ZIP CT-Scan file
+    aws s3 cp s3://$S3BUCKET/$S3KEY /tmp/$FNAME
+
+    logger "$0: Start model processing"
+
+    # Submitting file to the model
+    curl -X POST -F "input_file=@/tmp/$FNAME" http://localhost/predict/ -o /tmp/$FNAME_NO_SUFFIX.tiff
+
+    logger "$0: END model processing"
+
+    # saving result file
+    aws s3 cp /tmp/$FNAME_NO_SUFFIX.tiff s3://$S3BUCKET/$S3KEY_NO_SUFFIX.tiff
+
+    logger "$0: $FNAME_NO_SUFFIX.tiff copied to bucket"
+
+    # Updating status
+    update_status "2" Ready
+
+    # pretend to do work for 60 seconds in order to catch the scale in protection
+    sleep 60
+
+    logger "$0: Running: aws sqs --output=json delete-message --queue-url $SQSQUEUE --receipt-handle $RECEIPT"
+
+    aws sqs --output=json delete-message --queue-url $SQSQUEUE --receipt-handle $RECEIPT
+
+    logger "$0: Running: aws autoscaling set-instance-protection --instance-ids $INSTANCE_ID --auto-scaling-group-name $AUTOSCALINGGROUP --no-protected-from-scale-in"
+
+    aws autoscaling set-instance-protection --instance-ids $INSTANCE_ID --auto-scaling-group-name $AUTOSCALINGGROUP --no-protected-from-scale-in
 
 }
 
@@ -25,7 +63,13 @@ REGION=%REGION%
 SQSQUEUE=%SQSQUEUE%
 AUTOSCALINGGROUP=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE_ID" "Name=key,Values=aws:autoscaling:groupName" | jq -r '.Tags[0].Value')
 
-while sleep 5; do 
+while :;do 
+
+  # Spot instance interruption notice detection
+  if [ ! -z $(curl -Isf http://169.254.169.254/latest/meta-data/spot/instance-action) ]; then
+    logger "[$0]: spot instance interruption notice detected"
+    break 
+  fi
 
   JSON=$(aws sqs --output=json get-queue-attributes \
     --queue-url $SQSQUEUE \
@@ -34,6 +78,7 @@ while sleep 5; do
 
   if [ $MESSAGES -eq 0 ]; then
 
+    sleep 60
     continue
 
   fi
@@ -64,47 +109,24 @@ while sleep 5; do
 
     logger "$0: Found work. Details: S3KEY=$S3KEY, FNAME=$FNAME, FNAME_NO_SUFFIX=$FNAME_NO_SUFFIX, FEXT=$FEXT, S3KEY_NO_SUFFIX=$S3KEY_NO_SUFFIX"
 
-    logger "$0: Running: aws autoscaling set-instance-protection --instance-ids $INSTANCE_ID --auto-scaling-group-name $AUTOSCALINGGROUP --protected-from-scale-in"
+    aws s3 cp s3://$S3BUCKET/$S3KEY.status /tmp/${FNAME}.status
 
-    aws autoscaling set-instance-protection --instance-ids $INSTANCE_ID --auto-scaling-group-name $AUTOSCALINGGROUP --protected-from-scale-in
+    if [ -f "/tmp/${FNAME}.status" ]; then
+      STATUS_CODE=$(cat /tmp/${FNAME}.status | jq -r '.code')
+      logger "$0: ${FNAME}.status = $STATUS_CODE"
+    else 
+      update_status "3" "Status file not found"
+    fi
 
-    # Updating status
-    update_status "0" Processing
-
-    # Copying the ZIP CT-Scan file
-    aws s3 cp s3://$S3BUCKET/$S3KEY /tmp/$FNAME
-
-    logger "$0: Start model processing"
-
-    # Submitting file to the model
-    curl -X POST -F "input_file=@/tmp/$FNAME" http://localhost/predict/ -o /tmp/$FNAME_NO_SUFFIX.tiff
-    #curl -X GET "http://localhost/predict/?input_file=${ENCODED_URL}&format=tiff" -o /tmp/$FNAME_NO_SUFFIX.tiff
-
-    logger "$0: END model processing"
-
-    # saving result file
-    aws s3 cp /tmp/$FNAME_NO_SUFFIX.tiff s3://$S3BUCKET/$S3KEY_NO_SUFFIX.tiff
-
-    logger "$0: $FNAME_NO_SUFFIX.tiff copied to bucket"
-
-    # Updating status
-    update_status "1" Ready
-
-    # pretend to do work for 60 seconds in order to catch the scale in protection
-    sleep 60
-
-    logger "$0: Running: aws sqs --output=json delete-message --queue-url $SQSQUEUE --receipt-handle $RECEIPT"
-
-    aws sqs --output=json delete-message --queue-url $SQSQUEUE --receipt-handle $RECEIPT
-
-    logger "$0: Running: aws autoscaling set-instance-protection --instance-ids $INSTANCE_ID --auto-scaling-group-name $AUTOSCALINGGROUP --no-protected-from-scale-in"
-
-    aws autoscaling set-instance-protection --instance-ids $INSTANCE_ID --auto-scaling-group-name $AUTOSCALINGGROUP --no-protected-from-scale-in
-
+    if [ $STATUS_CODE -eq 0 ]; then
+      process_queue      
+    else
+      logger "$0: ${FNAME} was probably processed by another worker"
+    fi
+    
   else
 
     logger "$0: Skipping message - file not of type zip. Deleting message from queue"
-
     aws sqs --output=json delete-message --queue-url $SQSQUEUE --receipt-handle $RECEIPT
 
   fi
