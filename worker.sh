@@ -71,16 +71,14 @@ while sleep 5; do
     # Updating status
     update_status "0" Processing
 
-    # Create the encoding for the URL that will be sent to the model
-    URL="https://$S3BUCKET.s3.amazonaws.com/$S3KEY"
-
-    ENCODED_URL=$(urlencode ${URL})
+    # Copying the ZIP CT-Scan file
+    aws s3 cp s3://$S3BUCKET/$S3KEY /tmp/$FNAME
 
     logger "$0: Start model processing"
 
     # Submitting file to the model
-    logger "$0: http://localhost/predict/?input_file=${ENCODED_URL}&format=tiff"
-    curl -X GET "http://localhost/predict/?input_file=${ENCODED_URL}&format=tiff" -H "accept: text/plain" -o /tmp/$FNAME_NO_SUFFIX.tiff
+    curl -X POST -F "input_file=@/tmp/$FNAME" http://localhost/predict/ -o /tmp/$FNAME_NO_SUFFIX.tiff
+    #curl -X GET "http://localhost/predict/?input_file=${ENCODED_URL}&format=tiff" -o /tmp/$FNAME_NO_SUFFIX.tiff
 
     logger "$0: END model processing"
 
