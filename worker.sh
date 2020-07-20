@@ -119,7 +119,7 @@ while :;do
     fi
 
     if [ $STATUS_CODE -eq 0 ]; then
-      process_queue      
+      process_file      
     else
       logger "$0: ${FNAME} was probably processed by another worker"
     fi

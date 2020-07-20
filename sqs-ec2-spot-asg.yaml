@@ -450,6 +450,14 @@ Resources:
       Queues:
       - Ref: sqsQueue
     Type: AWS::SQS::QueuePolicy
+
+  bucketpolicy:
+    DependsOn:
+    - sqsQueue
+    Properties:
+      Bucket: 
+        Ref: s3Bucket
+      
   vpc:
     Properties:
       CidrBlock:

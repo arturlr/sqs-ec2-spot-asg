@@ -43,5 +43,5 @@ docker pull ${REGISTRY}/covid-19-api:latest
 docker tag ${REGISTRY}/covid-19-api:latest covid-19-api:latest
 docker run --runtime nvidia -p 80:80 --network 'host' -d --restart always covid-19-api:latest
 
-systemctl start spot-instance-interruption-notice-handler
+#systemctl start spot-instance-interruption-notice-handler
 systemctl start worker
