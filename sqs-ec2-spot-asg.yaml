@@ -449,15 +449,7 @@ Resources:
         Version: 2012-10-17
       Queues:
       - Ref: sqsQueue
-    Type: AWS::SQS::QueuePolicy
-
-  bucketpolicy:
-    DependsOn:
-    - sqsQueue
-    Properties:
-      Bucket: 
-        Ref: s3Bucket
-      
+    Type: AWS::SQS::QueuePolicy      
   vpc:
     Properties:
       CidrBlock:
