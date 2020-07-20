@@ -43,10 +43,7 @@ process_file () {
     logger "$0: $FNAME_NO_SUFFIX.tiff copied to bucket"
 
     # Updating status
-    update_status "2" Ready
-
-    # pretend to do work for 60 seconds in order to catch the scale in protection
-    sleep 60
+    update_status "2" Ready    
 
     logger "$0: Running: aws sqs --output=json delete-message --queue-url $SQSQUEUE --receipt-handle $RECEIPT"
 
@@ -55,6 +52,8 @@ process_file () {
     logger "$0: Running: aws autoscaling set-instance-protection --instance-ids $INSTANCE_ID --auto-scaling-group-name $AUTOSCALINGGROUP --no-protected-from-scale-in"
 
     aws autoscaling set-instance-protection --instance-ids $INSTANCE_ID --auto-scaling-group-name $AUTOSCALINGGROUP --no-protected-from-scale-in
+
+    sleep 60
 
 }
 
@@ -77,10 +76,9 @@ while :;do
   MESSAGES=$(echo "$JSON" | jq -r '.Attributes.ApproximateNumberOfMessages')
 
   if [ $MESSAGES -eq 0 ]; then
-
     sleep 60
+    logger "$0: No messages to process. sleeping for 60 seconds."
     continue
-
   fi
 
   JSON=$(aws sqs --output=json receive-message --queue-url $SQSQUEUE)
@@ -88,7 +86,6 @@ while :;do
   BODY=$(echo "$JSON" | jq -r '.Messages[] | .Body')
 
   if [ -z "$RECEIPT" ]; then
-
     logger "$0: Empty receipt. Something went wrong."
     continue
 
