@@ -44,7 +44,7 @@ process_file () {
 
     # Unzipping the dcm files
     unzip /tmp/$FNAME -d /tmp/$FNAME_NO_SUFFIX
-    aws s3 cp /tmp/$FNAME_NO_SUFFIX --recursive s3://$S3BUCKET/$S3KEY_NO_SUFFIX/
+    aws s3 cp /tmp/$FNAME_NO_SUFFIX --recursive s3://$S3BUCKET/$S3KEY_NO_SUFFIX
 
     # Updating status
     update_status "2" Ready    
