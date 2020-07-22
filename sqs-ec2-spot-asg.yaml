@@ -51,7 +51,7 @@ Parameters:
     Type: Number
     MinValue: 10
   asgWarmup:
-    Default: 300
+    Default: 420
     Description: Steped Scaling policy warmup duration (secs)
     Type: Number
     MinValue: 10

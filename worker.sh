@@ -43,6 +43,7 @@ process_file () {
     logger "$0: $FNAME_NO_SUFFIX.tiff copied to bucket"
 
     # Unzipping the dcm files
+    logger "$0: Unzipping $FNAME"
     unzip /tmp/$FNAME -d $FNAME_NO_SUFFIX
 
     # Updating status
