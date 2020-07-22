@@ -43,8 +43,8 @@ process_file () {
     logger "$0: $FNAME_NO_SUFFIX.tiff copied to bucket"
 
     # Unzipping the dcm files
-    unzip /tmp/$FNAME -d /tmp/$FNAME_NO_SUFFIX
-    aws s3 cp --recursive /tmp/$FNAME_NO_SUFFIX s3://$S3BUCKET/$S3KEY_NO_SUFFIX
+    unzip -j /tmp/$FNAME -d /tmp/$FNAME_NO_SUFFIX
+    aws s3 cp --recursive /tmp/$FNAME_NO_SUFFIX s3://$S3BUCKET/$S3KEY_NO_SUFFIX/dcm
 
     # Updating status
     update_status "2" Ready    
