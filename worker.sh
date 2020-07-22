@@ -43,8 +43,8 @@ process_file () {
     logger "$0: $FNAME_NO_SUFFIX.tiff copied to bucket"
 
     # Unzipping the dcm files
-    logger "$0: Unzipping $FNAME"
-    unzip /tmp/$FNAME -d $FNAME_NO_SUFFIX
+    unzip /tmp/$FNAME -d /tmp/$FNAME_NO_SUFFIX
+    aws s3 cp /tmp/$FNAME_NO_SUFFIX --recursive s3://$S3BUCKET/$S3KEY_NO_SUFFIX/
 
     # Updating status
     update_status "2" Ready    
@@ -57,7 +57,7 @@ process_file () {
 
     aws autoscaling set-instance-protection --instance-ids $INSTANCE_ID --auto-scaling-group-name $AUTOSCALINGGROUP --no-protected-from-scale-in
 
-    sleep 60
+    sleep 5
 
 }
 

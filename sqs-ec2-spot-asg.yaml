@@ -75,7 +75,7 @@ Parameters:
     Type: Number
     MinValue: 1
   asgEvaluationPeriodDuration:
-    Default: 60
+    Default: 120
     Description: Evaluation period duration (secs) for scale-out / scale-in actions
     Type: Number
     MinValue: 60
