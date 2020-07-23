@@ -54,8 +54,8 @@ process_file () {
     for file in /tmp/png/$FNAME_NO_SUFFIX/*.png; do
       PNGS+="\"https://d2o8vcf7ix9uyt.cloudfront.net/png/$FNAME_NO_SUFFIX-$FILE_DATE/$(basename $file)\",\n"
     done
-    sed -i "s|%DICOM_FILES%|$DCMS|g" $WORKING_DIR/data.js
-    sed -i "s|%%PNG_FILES%%|$PNGS|g" $WORKING_DIR/data.js
+    sed -i "s|%DICOM_FILES%|${DCMS%??}|g" $WORKING_DIR/data.js
+    sed -i "s|%PNG_FILES%|${PNGS%??}|g" $WORKING_DIR/data.js
 
     # Copying to the public bucket
     aws s3 cp --recursive /tmp/dcm/$FNAME_NO_SUFFIX s3://$S3BUCKET/public/dcm/$FNAME_NO_SUFFIX-$FILE_DATE/
