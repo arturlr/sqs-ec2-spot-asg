@@ -34,7 +34,7 @@ process_file () {
     logger "$0: Start model processing"
 
     # Submitting file to the model
-    curl -X POST -F "input_file=@/tmp/$FNAME;format=png" http://localhost/predict/ -o /tmp/$FNAME_NO_SUFFIX-png.zip
+    curl -X POST -F "input_file=@/tmp/$FNAME" http://localhost/predict/?format=png -o /tmp/$FNAME_NO_SUFFIX-png.zip
 
     logger "$0: END model processing"
 
@@ -47,15 +47,21 @@ process_file () {
 
     # Create the JSON File
     DCMS=""
-    for file in /tmp/dcm/$FNAME_NO_SUFFIX/*; do
-      DCMS+="\"https://d2o8vcf7ix9uyt.cloudfront.net/dcm/$FNAME_NO_SUFFIX-$FILE_DATE/$(basename $file)\",\n"
+    PNGS=""
+    for file in /tmp/dcm/$FNAME_NO_SUFFIX/*.dcm; do
+      DCMS+="\"https://d2o8vcf7ix9uyt.cloudfront.net/$FNAME_NO_SUFFIX-$FILE_DATE/$(basename $file)\",\n"
     done
-    sed -i "s|%DICOM_FILES%|$DCMS|g" /root/sqs-ec2-spot-asg/data.js
-    echo $DCMS
+    for file in /tmp/png/$FNAME_NO_SUFFIX/*.png; do
+      PNGS+="\"https://d2o8vcf7ix9uyt.cloudfront.net/$FNAME_NO_SUFFIX-$FILE_DATE/$(basename $file)\",\n"
+    done
+    sed -i "s|%DICOM_FILES%|$DCMS|g" $WORKING_DIR/data.js
+    sed -i "s|%%PNG_FILES%%|$PNGS|g" $WORKING_DIR/data.js
 
     # Copying to the public bucket
     aws s3 cp --recursive /tmp/dcm/$FNAME_NO_SUFFIX s3://$S3BUCKET/dcm/$FNAME_NO_SUFFIX-$FILE_DATE/
     aws s3 cp --recursive /tmp/png/$FNAME_NO_SUFFIX s3://$S3BUCKET/png/$FNAME_NO_SUFFIX-$FILE_DATE/
+    aws s3 cp $WORKING_DIR/data.js s3://$S3BUCKET/png/$FNAME_NO_SUFFIX-$FILE_DATE/
+
 
     # Updating status
     update_status "2" Ready    
@@ -76,6 +82,7 @@ INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
 REGION=%REGION%
 PUBLICBUCKET=%PUBLICBUCKET%
 SQSQUEUE=%SQSQUEUE%
+WORKING_DIR=%WORKING_DIR%
 AUTOSCALINGGROUP=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE_ID" "Name=key,Values=aws:autoscaling:groupName" | jq -r '.Tags[0].Value')
 
 while :;do 

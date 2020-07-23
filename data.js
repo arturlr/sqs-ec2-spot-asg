@@ -7,7 +7,7 @@ let exampleFiles =
      %DICOM_FILES%
     ],
     "mask": [
-      %PNG_FILES
+      %PNG_FILES%
     ]
   }
 ]
