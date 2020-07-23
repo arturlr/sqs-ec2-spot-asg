@@ -48,8 +48,9 @@ process_file () {
     # Create the JSON File
     DCMS=""
     for file in /tmp/dcm/$FNAME_NO_SUFFIX/*; do
-      DCMS+="https://d2o8vcf7ix9uyt.cloudfront.net/dcm/$FNAME_NO_SUFFIX-$FILE_DATE$(basename $file)"
+      DCMS+="\"https://d2o8vcf7ix9uyt.cloudfront.net/dcm/$FNAME_NO_SUFFIX-$FILE_DATE/$(basename $file)\",\n"
     done
+    sed -i "s|%DICOM_FILES%|$DCMS|g" /root/sqs-ec2-spot-asg/data.js
     echo $DCMS
 
     # Copying to the public bucket
