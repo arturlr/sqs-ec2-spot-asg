@@ -29,22 +29,25 @@ process_file () {
 
     # Copying the ZIP CT-Scan file
     aws s3 cp s3://$S3BUCKET/$S3KEY /tmp/$FNAME
+    $FILE_DATE=$(aws s3 ls s3://$S3BUCKET/$S3KEY | grep -v status | awk -F'[^0-9]*' '{print $1$2$3$4$5}')
 
     logger "$0: Start model processing"
 
     # Submitting file to the model
-    curl -X POST -F "input_file=@/tmp/$FNAME" http://localhost/predict/ -o /tmp/$FNAME_NO_SUFFIX.tiff
+    curl -X POST -F "input_file=@/tmp/$FNAME;format=png" http://localhost/predict/ -o /tmp/$FNAME_NO_SUFFIX-PNG.zip
 
     logger "$0: END model processing"
 
-    # saving result file
-    aws s3 cp /tmp/$FNAME_NO_SUFFIX.tiff s3://$S3BUCKET/$S3KEY_NO_SUFFIX.tiff
-
-    logger "$0: $FNAME_NO_SUFFIX.tiff copied to bucket"
-
+    # Unzipping the png files
+    unzip -j /tmp/$FNAME_NO_SUFFIX-PNG.zip -d /tmp/png/$FNAME_NO_SUFFIX
     # Unzipping the dcm files
-    unzip -j /tmp/$FNAME -d /tmp/$FNAME_NO_SUFFIX
-    aws s3 cp --recursive /tmp/$FNAME_NO_SUFFIX s3://$S3BUCKET/$S3KEY_NO_SUFFIX/dcm
+    unzip -j /tmp/$FNAME -d /tmp/dcm/$FNAME_NO_SUFFIX
+
+    # Create the JSON File
+
+    # Copying to the public bucket
+    aws s3 cp --recursive /tmp/dcm/$FNAME_NO_SUFFIX s3://$S3BUCKET/dcm/$S3KEY_NO_SUFFIX-$FILE_DATE/
+    aws s3 cp --recursive /tmp/png/$FNAME_NO_SUFFIX s3://$S3BUCKET/png/$S3KEY_NO_SUFFIX-$FILE_DATE/
 
     # Updating status
     update_status "2" Ready    
@@ -63,6 +66,7 @@ process_file () {
 
 INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
 REGION=%REGION%
+PUBLICBUCKET=%PUBLICBUCKET%
 SQSQUEUE=%SQSQUEUE%
 AUTOSCALINGGROUP=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE_ID" "Name=key,Values=aws:autoscaling:groupName" | jq -r '.Tags[0].Value')
 

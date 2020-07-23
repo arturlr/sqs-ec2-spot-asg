@@ -4,7 +4,7 @@ WORKING_DIR=/root/sqs-ec2-spot-asg
 
 REGION=$1
 ACCOUNT=$2
-BUCKET=$3
+PUBLICBUCKET=$3
 SQSQUEUE=$4
 CLOUDWATCHLOGSGROUP=$5
 
@@ -34,6 +34,7 @@ sed -i "s|us-east-1|$REGION|g" /etc/awslogs/awscli.conf
 sed -i "s|%CLOUDWATCHLOGSGROUP%|$CLOUDWATCHLOGSGROUP|g" /etc/awslogs/awslogs.conf
 sed -i "s|%REGION%|$REGION|g" /usr/local/bin/worker.sh
 sed -i "s|%SQSQUEUE%|$SQSQUEUE|g" /usr/local/bin/worker.sh
+#sed -i "s|%PUBLICBUCKET%|$PUBLICBUCKET|g" /usr/local/bin/worker.sh
 
 systemctl start awslogsd
 
