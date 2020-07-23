@@ -48,13 +48,13 @@ process_file () {
     # Create the JSON File
     DCMS=""
     for file in /tmp/dcm/$FNAME_NO_SUFFIX/*; do
-      DCMS+="https://d2o8vcf7ix9uyt.cloudfront.net/dcm/$FNAME_NO_SUFFIX$(basename $file)"
+      DCMS+="https://d2o8vcf7ix9uyt.cloudfront.net/dcm/$FNAME_NO_SUFFIX-$FILE_DATE$(basename $file)"
     done
     echo $DCMS
 
     # Copying to the public bucket
-    aws s3 cp --recursive /tmp/dcm/$FNAME_NO_SUFFIX s3://$S3BUCKET/dcm/$S3KEY_NO_SUFFIX-$FILE_DATE/
-    aws s3 cp --recursive /tmp/png/$FNAME_NO_SUFFIX s3://$S3BUCKET/png/$S3KEY_NO_SUFFIX-$FILE_DATE/
+    aws s3 cp --recursive /tmp/dcm/$FNAME_NO_SUFFIX s3://$S3BUCKET/dcm/$FNAME_NO_SUFFIX-$FILE_DATE/
+    aws s3 cp --recursive /tmp/png/$FNAME_NO_SUFFIX s3://$S3BUCKET/png/$FNAME_NO_SUFFIX-$FILE_DATE/
 
     # Updating status
     update_status "2" Ready    
