@@ -29,21 +29,28 @@ process_file () {
 
     # Copying the ZIP CT-Scan file
     aws s3 cp s3://$S3BUCKET/$S3KEY /tmp/$FNAME
-    $FILE_DATE=$(aws s3 ls s3://$S3BUCKET/$S3KEY | grep -v status | awk -F'[^0-9]*' '{print $1$2$3$4$5}')
+    FILE_DATE=$(aws s3 ls s3://$S3BUCKET/$S3KEY | grep -v status | awk -F'[^0-9]*' '{print $1$2$3$4$5}')
 
     logger "$0: Start model processing"
 
     # Submitting file to the model
-    curl -X POST -F "input_file=@/tmp/$FNAME;format=png" http://localhost/predict/ -o /tmp/$FNAME_NO_SUFFIX-PNG.zip
+    curl -X POST -F "input_file=@/tmp/$FNAME;format=png" http://localhost/predict/ -o /tmp/$FNAME_NO_SUFFIX-png.zip
 
     logger "$0: END model processing"
 
     # Unzipping the png files
-    unzip -j /tmp/$FNAME_NO_SUFFIX-PNG.zip -d /tmp/png/$FNAME_NO_SUFFIX
+    mkdir -p /tmp/png/$FNAME_NO_SUFFIX    
+    unzip -j /tmp/$FNAME_NO_SUFFIX-png.zip -d /tmp/png/$FNAME_NO_SUFFIX
     # Unzipping the dcm files
+    mkdir -p /tmp/dcm/$FNAME_NO_SUFFIX
     unzip -j /tmp/$FNAME -d /tmp/dcm/$FNAME_NO_SUFFIX
 
     # Create the JSON File
+    DCMS=""
+    for file in /tmp/dcm/$FNAME_NO_SUFFIX/*; do
+      DCMS+="https://d2o8vcf7ix9uyt.cloudfront.net/dcm/$FNAME_NO_SUFFIX$(basename $file)"
+    done
+    echo $DCMS
 
     # Copying to the public bucket
     aws s3 cp --recursive /tmp/dcm/$FNAME_NO_SUFFIX s3://$S3BUCKET/dcm/$S3KEY_NO_SUFFIX-$FILE_DATE/
