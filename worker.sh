@@ -29,6 +29,9 @@ process_file () {
 
     # Copying the ZIP CT-Scan file
     aws s3 cp s3://$S3BUCKET/$S3KEY /tmp/$FNAME
+    #
+    # 2020-07-23 14:01:19
+    # 202007231401
     FILE_DATE=$(aws s3 ls s3://$S3BUCKET/$S3KEY | grep -v status | awk -F'[^0-9]*' '{print $1$2$3$4$5}')
 
     logger "$0: Start model processing"
