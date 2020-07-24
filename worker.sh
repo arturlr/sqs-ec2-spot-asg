@@ -58,13 +58,24 @@ process_file () {
       PNGS+="\"https://d2o8vcf7ix9uyt.cloudfront.net/png/$FNAME_NO_SUFFIX-$FILE_DATE/$(basename $file)\",\n"
     done
 
-    cp $WORKING_DIR/data.js /tmp/png/$FNAME_NO_SUFFIX
-    sed -i "s|%DICOM_FILES%|${DCMS%??}|g" /tmp/png/$FNAME_NO_SUFFIX/data.js
-    sed -i "s|%PNG_FILES%|${PNGS%??}|g" /tmp/png/$FNAME_NO_SUFFIX/data.js
-
     # Copying to the public bucket
     aws s3 cp --recursive /tmp/dcm/$FNAME_NO_SUFFIX s3://$S3BUCKET/public/dcm/$FNAME_NO_SUFFIX-$FILE_DATE/
     aws s3 cp --recursive /tmp/png/$FNAME_NO_SUFFIX s3://$S3BUCKET/public/png/$FNAME_NO_SUFFIX-$FILE_DATE/
+
+    # html and data.js file
+    mkdir -p /tmp/html/$FNAME_NO_SUFFIX
+
+    DATAJS=${CLOUDFRONT}/html/$FNAME_NO_SUFFIX-$FILE_DATE/data.js
+
+    cp $WORKING_DIR/sapien-html/index.html /tmp/html/$FNAME_NO_SUFFIX
+    sed -i "s|%CLOUDFRONT%|${CLOUDFRONT}|g" /tmp/html/$FNAME_NO_SUFFIX/index.html
+    sed -i "s|%DATAJS%|${DATAJS}|g" /tmp/html/$FNAME_NO_SUFFIX/index.html
+
+    cp $WORKING_DIR/sapien-html/data.js /tmp/html/$FNAME_NO_SUFFIX
+    sed -i "s|%DICOM_FILES%|${DCMS}|g" /tmp/html/$FNAME_NO_SUFFIX/data.js
+    sed -i "s|%PNG_FILES%|${PNGS}|g" /tmp/html/$FNAME_NO_SUFFIX/data.js
+
+    aws s3 cp --recursive /tmp/html/$FNAME_NO_SUFFIX s3://$S3BUCKET/public/html/$FNAME_NO_SUFFIX-$FILE_DATE/
 
     # Updating status
     update_status "2" Ready    
@@ -83,7 +94,7 @@ process_file () {
 
 INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
 REGION=%REGION%
-PUBLICBUCKET=%PUBLICBUCKET%
+CLOUDFRONT=%CLOUDFRONT%
 SQSQUEUE=%SQSQUEUE%
 WORKING_DIR=%WORKING_DIR%
 AUTOSCALINGGROUP=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE_ID" "Name=key,Values=aws:autoscaling:groupName" | jq -r '.Tags[0].Value')

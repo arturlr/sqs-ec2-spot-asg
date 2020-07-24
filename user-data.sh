@@ -7,6 +7,7 @@ ACCOUNT=$2
 PUBLICBUCKET=$3
 SQSQUEUE=$4
 CLOUDWATCHLOGSGROUP=$5
+CLOUDFRONT=$6
 
 yum -y --security update
 
@@ -35,6 +36,7 @@ sed -i "s|%CLOUDWATCHLOGSGROUP%|$CLOUDWATCHLOGSGROUP|g" /etc/awslogs/awslogs.con
 sed -i "s|%REGION%|$REGION|g" /usr/local/bin/worker.sh
 sed -i "s|%SQSQUEUE%|$SQSQUEUE|g" /usr/local/bin/worker.sh
 sed -i "s|%WORKING_DIR%|$WORKING_DIR|g" /usr/local/bin/worker.sh
+sed -i "s|%CLOUDFRONT%|$CLOUDFRONT|g" /usr/local/bin/worker.sh
 #sed -i "s|%PUBLICBUCKET%|$PUBLICBUCKET|g" /usr/local/bin/worker.sh
 
 systemctl start awslogsd
