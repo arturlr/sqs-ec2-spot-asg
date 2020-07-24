@@ -2,12 +2,14 @@
 INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
 WORKING_DIR=/root/sqs-ec2-spot-asg
 
-REGION=$1
-ACCOUNT=$2
-PUBLICBUCKET=$3
-SQSQUEUE=$4
-CLOUDWATCHLOGSGROUP=$5
-CLOUDFRONT=$6
+
+ACCOUNT="$(aws sts get-caller-identity --query Account --output text)"
+REGION="$(curl -s http://169.254.169.254/latest/meta-data/local-hostname | cut -d . -f 2)"
+SQSQUEUE=$1
+CLOUDWATCHLOGSGROUP=$2
+CLOUDFRONT=$3
+
+logger "$0: -------------- Initializing user-data.sh Account: ${ACCOUNT} - Region: ${REGION} - Queue: ${SQSQUEU} - Logs: ${CLOUDWATCHLOGSGROUP} - CDN: ${CLOUDFRONT}"
 
 yum -y --security update
 
@@ -17,8 +19,6 @@ yum -y install awslogs jq imagemagick
 
 # This fixes awslogsd.service error (ImportError: cannot import name _normalize_host)
 pip install --user sphinx
-
-echo "----------------------- user-data"
 
 aws configure set default.region $REGION
 
