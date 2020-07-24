@@ -48,7 +48,7 @@ process_file () {
     mkdir -p /tmp/dcm/$FNAME_NO_SUFFIX
     unzip -j /tmp/$FNAME -d /tmp/dcm/$FNAME_NO_SUFFIX
 
-    # Create the JSON File
+    # Preping the data for the JSON File
     DCMS=""
     PNGS=""
     for file in /tmp/dcm/$FNAME_NO_SUFFIX/*.dcm; do
@@ -57,14 +57,14 @@ process_file () {
     for file in /tmp/png/$FNAME_NO_SUFFIX/*.png; do
       PNGS+="\"https://d2o8vcf7ix9uyt.cloudfront.net/png/$FNAME_NO_SUFFIX-$FILE_DATE/$(basename $file)\",\n"
     done
-    sed -i "s|%DICOM_FILES%|${DCMS%??}|g" $WORKING_DIR/data.js
-    sed -i "s|%PNG_FILES%|${PNGS%??}|g" $WORKING_DIR/data.js
+
+    cp $WORKING_DIR/data.js /tmp/png/$FNAME_NO_SUFFIX
+    sed -i "s|%DICOM_FILES%|${DCMS%??}|g" /tmp/png/$FNAME_NO_SUFFIX/data.js
+    sed -i "s|%PNG_FILES%|${PNGS%??}|g" /tmp/png/$FNAME_NO_SUFFIX/data.js
 
     # Copying to the public bucket
     aws s3 cp --recursive /tmp/dcm/$FNAME_NO_SUFFIX s3://$S3BUCKET/public/dcm/$FNAME_NO_SUFFIX-$FILE_DATE/
     aws s3 cp --recursive /tmp/png/$FNAME_NO_SUFFIX s3://$S3BUCKET/public/png/$FNAME_NO_SUFFIX-$FILE_DATE/
-    aws s3 cp $WORKING_DIR/data.js s3://$S3BUCKET/public/png/$FNAME_NO_SUFFIX-$FILE_DATE/
-
 
     # Updating status
     update_status "2" Ready    
