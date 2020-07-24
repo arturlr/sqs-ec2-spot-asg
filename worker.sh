@@ -52,10 +52,10 @@ process_file () {
     DCMS=""
     PNGS=""
     for file in /tmp/dcm/$FNAME_NO_SUFFIX/*.dcm; do
-      DCMS+="\"https://d2o8vcf7ix9uyt.cloudfront.net/dcm/$FNAME_NO_SUFFIX-$FILE_DATE/$(basename $file)\",\n"
+      DCMS+="\"https://${CLOUDFRONT}/dcm/$FNAME_NO_SUFFIX-$FILE_DATE/$(basename $file)\",\n"
     done
     for file in /tmp/png/$FNAME_NO_SUFFIX/*.png; do
-      PNGS+="\"https://d2o8vcf7ix9uyt.cloudfront.net/png/$FNAME_NO_SUFFIX-$FILE_DATE/$(basename $file)\",\n"
+      PNGS+="\"https://${CLOUDFRONT}/png/$FNAME_NO_SUFFIX-$FILE_DATE/$(basename $file)\",\n"
     done
 
     # Copying to the public bucket
@@ -72,8 +72,8 @@ process_file () {
     sed -i "s|%DATAJS%|${DATAJS}|g" /tmp/html/$FNAME_NO_SUFFIX/index.html
 
     cp $WORKING_DIR/sapien-html/data.js /tmp/html/$FNAME_NO_SUFFIX
-    sed -i "s|%DICOM_FILES%|${DCMS}|g" /tmp/html/$FNAME_NO_SUFFIX/data.js
-    sed -i "s|%PNG_FILES%|${PNGS}|g" /tmp/html/$FNAME_NO_SUFFIX/data.js
+    sed -i "s|%DICOM_FILES%|${DCMS%???}|g" /tmp/html/$FNAME_NO_SUFFIX/data.js
+    sed -i "s|%PNG_FILES%|${PNGS%???}|g" /tmp/html/$FNAME_NO_SUFFIX/data.js
 
     aws s3 cp --recursive /tmp/html/$FNAME_NO_SUFFIX s3://$S3BUCKET/public/html/$FNAME_NO_SUFFIX-$FILE_DATE/
 
