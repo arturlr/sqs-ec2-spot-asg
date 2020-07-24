@@ -121,26 +121,32 @@ Resources:
   cloudFront:
     Type: AWS::CloudFront::Distribution
     Properties: 
-      Origins:
-        - DomainName: s3Bucket.s3.amazonaws.com
-          OriginPath: /public
-          Id: s3Bucket
-      Enabled: 'true'
-      Comment: L3-COVID19 Frontend Bucket
-      DefaultCacheBehavior:
-          AllowedMethods:
-          - DELETE
-          - GET
-          - HEAD
-          - OPTIONS
-          - PATCH
-          - POST
-          - PUT
-          TargetOriginId: s3Bucket
-          ForwardedValues:
-            QueryString: 'false'
-            Cookies:
-              Forward: none
+      DistributionConfig:
+        Origins:
+          - DomainName: !Join
+              - ''
+              - - !Ref s3Bucket
+                - .s3.amazonaws.com
+            OriginPath: /public
+            Id: !Ref s3Bucket
+            S3OriginConfig:
+              OriginAccessIdentity: origin-access-identity/cloudfront/E2NB57AT2RC1MG
+        Enabled: true
+        DefaultCacheBehavior:
+            AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+            CachedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+            TargetOriginId: !Ref s3Bucket
+            ForwardedValues:
+              QueryString: 'false'
+              Cookies:
+                Forward: none
+            ViewerProtocolPolicy: allow-all
 
   attachGateway:
     Type: AWS::EC2::VPCGatewayAttachment
@@ -440,15 +446,14 @@ Resources:
               Ref: AWS::StackName
         UserData:
           Fn::Base64:
-            Fn::Sub: '#!/bin/bash -xe
-
-              yum -y install git
-
-              cd /root && git clone https://github.com/arturlr/sqs-ec2-spot-asg.git
-
-              bash /root/sqs-ec2-spot-asg/user-data.sh ${AWS::Region} ${AWS::AccountId} ${s3Bucket} ${sqsQueue} ${cloudWatchLogsGroup} {$cloudFront}
-
-              '
+            !Sub
+              - |-
+                #!/bin/bash -xe
+                yum -y install git
+                cd /root && git clone https://github.com/arturlr/sqs-ec2-spot-asg.git
+                bash /root/sqs-ec2-spot-asg/user-data.sh ${AWS::Region} ${AWS::AccountId} ${bucket} ${sqsQueue} ${cloudWatchLogsGroup} ${cloudFront}
+              - bucket: !Ref s3Bucket
+                cloudfront: !GetAtt cloudFront.DomainName
    
   publicRoute:
     Type: AWS::EC2::Route
