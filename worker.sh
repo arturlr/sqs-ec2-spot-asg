@@ -17,7 +17,7 @@ update_status () {
     MSG=$2
     echo "{ \"code\": $CODE, \"msg\": \"$MSG\" }" > /tmp/${FNAME}.status    
     aws s3 cp --quiet /tmp/${FNAME}.status s3://$S3BUCKET/$S3KEY.status
-    logger "---------------> Status changed to $MSG"
+    logger "$0:---------------> Status changed to $MSG"
 }
 
 process_file () {
@@ -55,14 +55,14 @@ process_file () {
     DCMS=""
     PNGS=""
     for file in /tmp/dcm/$FNAME_NO_SUFFIX/*.dcm; do
-      DCMS+="\"https://${CLOUDFRONT}/dcm/$FNAME_NO_SUFFIX-$FILE_DATE/$(basename $file)\",\n"
+      DCMS+="\"${CLOUDFRONT}/dcm/$FNAME_NO_SUFFIX-$FILE_DATE/$(basename $file)\",\n"
     done
     for file in /tmp/png/$FNAME_NO_SUFFIX/*.png; do
-      PNGS+="\"https://${CLOUDFRONT}/png/$FNAME_NO_SUFFIX-$FILE_DATE/$(basename $file)\",\n"
+      PNGS+="\"${CLOUDFRONT}/png/$FNAME_NO_SUFFIX-$FILE_DATE/$(basename $file)\",\n"
     done
 
     # Copying to the public bucket
-    logger "---------------> Moving DCM abd PNG files to S3"
+    logger "$0:---------------> Moving DCM abd PNG files to S3"
     aws s3 cp --quiet --recursive /tmp/dcm/$FNAME_NO_SUFFIX s3://$S3BUCKET/public/dcm/$FNAME_NO_SUFFIX-$FILE_DATE/
     aws s3 cp --quiet --recursive /tmp/png/$FNAME_NO_SUFFIX s3://$S3BUCKET/public/png/$FNAME_NO_SUFFIX-$FILE_DATE/
 
@@ -73,8 +73,8 @@ process_file () {
     DATAJS=${CLOUDFRONT}/html/$FNAME_NO_SUFFIX-$FILE_DATE/data.js
 
     cp $WORKING_DIR/sapien-html/index.html /tmp/html/$FNAME_NO_SUFFIX
-    sed -i "s|%CLOUDFRONT%|${CLOUDFRONT}|g" /tmp/html/$FNAME_NO_SUFFIX/index.html
-    sed -i "s|%DATAJS%|${DATAJS}|g" /tmp/html/$FNAME_NO_SUFFIX/index.html
+    sed -i "s|CLOUDFRONT|${CLOUDFRONT}|g" /tmp/html/$FNAME_NO_SUFFIX/index.html
+    sed -i "s|DATAJS|${DATAJS}|g" /tmp/html/$FNAME_NO_SUFFIX/index.html
 
     cp $WORKING_DIR/sapien-html/data.js /tmp/html/$FNAME_NO_SUFFIX
     sed -i "s|%DICOM_FILES%|${DCMS%???}|g" /tmp/html/$FNAME_NO_SUFFIX/data.js
@@ -99,7 +99,7 @@ process_file () {
 
 INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
 REGION=%REGION%
-CLOUDFRONT="http://"+%CLOUDFRONT%
+CLOUDFRONT="https://%CLOUDFRONT%"
 SQSQUEUE=%SQSQUEUE%
 WORKING_DIR=%WORKING_DIR%
 AUTOSCALINGGROUP=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE_ID" "Name=key,Values=aws:autoscaling:groupName" | jq -r '.Tags[0].Value')
