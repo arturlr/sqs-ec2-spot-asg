@@ -9,7 +9,7 @@ SQSQUEUE=$1
 CLOUDWATCHLOGSGROUP=$2
 CLOUDFRONT=$3
 
-logger "$0: -------------- Initializing user-data.sh Account: ${ACCOUNT} - Region: ${REGION} - Queue: ${SQSQUEU} - Logs: ${CLOUDWATCHLOGSGROUP} - CDN: ${CLOUDFRONT}"
+logger "$0: -------------- Initializing user-data.sh Account: ${ACCOUNT} - Region: ${REGION} - Queue: ${SQSQUEUE} - Logs: ${CLOUDWATCHLOGSGROUP} - CDN: ${CLOUDFRONT}"
 
 yum -y --security update
 

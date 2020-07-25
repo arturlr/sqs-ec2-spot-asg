@@ -16,11 +16,14 @@ update_status () {
     CODE=$1
     MSG=$2
     echo "{ \"code\": $CODE, \"msg\": \"$MSG\" }" > /tmp/${FNAME}.status    
-    aws s3 cp /tmp/${FNAME}.status s3://$S3BUCKET/$S3KEY.status
+    aws s3 cp --quiet /tmp/${FNAME}.status s3://$S3BUCKET/$S3KEY.status
+    logger "---------------> Status changed to $MSG"
 }
 
 process_file () {
     
+    logger "-------------------------> Processing $FNAME"
+
     logger "$0: Running: aws autoscaling set-instance-protection --instance-ids $INSTANCE_ID --auto-scaling-group-name $AUTOSCALINGGROUP --protected-from-scale-in"
     aws autoscaling set-instance-protection --instance-ids $INSTANCE_ID --auto-scaling-group-name $AUTOSCALINGGROUP --protected-from-scale-in
 
@@ -35,16 +38,16 @@ process_file () {
     FILE_DATE=$(aws s3 ls s3://$S3BUCKET/$S3KEY | grep -v status | awk -F'[^0-9]*' '{print $1$2$3$4$5}')
 
     logger "$0: Start model processing"
-
     # Submitting file to the model
     curl -X POST -F "input_file=@/tmp/$FNAME" http://localhost/predict/?format=png -o /tmp/$FNAME_NO_SUFFIX-png.zip
-
     logger "$0: END model processing"
 
     # Unzipping the png files
+    logger "---------------> Unzipping PNG files"
     mkdir -p /tmp/png/$FNAME_NO_SUFFIX    
     unzip -j /tmp/$FNAME_NO_SUFFIX-png.zip -d /tmp/png/$FNAME_NO_SUFFIX
     # Unzipping the dcm files
+    logger "---------------> Unzipping DCM files"
     mkdir -p /tmp/dcm/$FNAME_NO_SUFFIX
     unzip -j /tmp/$FNAME -d /tmp/dcm/$FNAME_NO_SUFFIX
 
@@ -59,10 +62,12 @@ process_file () {
     done
 
     # Copying to the public bucket
-    aws s3 cp --recursive /tmp/dcm/$FNAME_NO_SUFFIX s3://$S3BUCKET/public/dcm/$FNAME_NO_SUFFIX-$FILE_DATE/
-    aws s3 cp --recursive /tmp/png/$FNAME_NO_SUFFIX s3://$S3BUCKET/public/png/$FNAME_NO_SUFFIX-$FILE_DATE/
+    logger "---------------> Moving DCM abd PNG files to S3"
+    aws s3 cp --quiet --recursive /tmp/dcm/$FNAME_NO_SUFFIX s3://$S3BUCKET/public/dcm/$FNAME_NO_SUFFIX-$FILE_DATE/
+    aws s3 cp --quiet --recursive /tmp/png/$FNAME_NO_SUFFIX s3://$S3BUCKET/public/png/$FNAME_NO_SUFFIX-$FILE_DATE/
 
     # html and data.js file
+    logger "---------------> Preping index.html and data.js"
     mkdir -p /tmp/html/$FNAME_NO_SUFFIX
 
     DATAJS=${CLOUDFRONT}/html/$FNAME_NO_SUFFIX-$FILE_DATE/data.js
@@ -75,7 +80,7 @@ process_file () {
     sed -i "s|%DICOM_FILES%|${DCMS%???}|g" /tmp/html/$FNAME_NO_SUFFIX/data.js
     sed -i "s|%PNG_FILES%|${PNGS%???}|g" /tmp/html/$FNAME_NO_SUFFIX/data.js
 
-    aws s3 cp --recursive /tmp/html/$FNAME_NO_SUFFIX s3://$S3BUCKET/public/html/$FNAME_NO_SUFFIX-$FILE_DATE/
+    aws s3 cp --quiet --recursive /tmp/html/$FNAME_NO_SUFFIX s3://$S3BUCKET/public/html/$FNAME_NO_SUFFIX-$FILE_DATE/
 
     # Updating status
     update_status "2" Ready    
