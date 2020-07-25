@@ -22,7 +22,7 @@ update_status () {
 
 process_file () {
     
-    logger "-------------------------> Processing $FNAME"
+    logger "$0:-------------------------> Processing $FNAME"
 
     logger "$0: Running: aws autoscaling set-instance-protection --instance-ids $INSTANCE_ID --auto-scaling-group-name $AUTOSCALINGGROUP --protected-from-scale-in"
     aws autoscaling set-instance-protection --instance-ids $INSTANCE_ID --auto-scaling-group-name $AUTOSCALINGGROUP --protected-from-scale-in
@@ -43,13 +43,13 @@ process_file () {
     logger "$0: END model processing"
 
     # Unzipping the png files
-    logger "---------------> Unzipping PNG files"
+    logger "$0:---------------> Unzipping PNG files"
     mkdir -p /tmp/png/$FNAME_NO_SUFFIX    
-    unzip -j /tmp/$FNAME_NO_SUFFIX-png.zip -d /tmp/png/$FNAME_NO_SUFFIX
+    unzip -j -q /tmp/$FNAME_NO_SUFFIX-png.zip -d /tmp/png/$FNAME_NO_SUFFIX
     # Unzipping the dcm files
-    logger "---------------> Unzipping DCM files"
+    logger "$0:---------------> Unzipping DCM files"
     mkdir -p /tmp/dcm/$FNAME_NO_SUFFIX
-    unzip -j /tmp/$FNAME -d /tmp/dcm/$FNAME_NO_SUFFIX
+    unzip -j -q /tmp/$FNAME -d /tmp/dcm/$FNAME_NO_SUFFIX
 
     # Preping the data for the JSON File
     DCMS=""
@@ -67,7 +67,7 @@ process_file () {
     aws s3 cp --quiet --recursive /tmp/png/$FNAME_NO_SUFFIX s3://$S3BUCKET/public/png/$FNAME_NO_SUFFIX-$FILE_DATE/
 
     # html and data.js file
-    logger "---------------> Preping index.html and data.js"
+    logger "$0:---------------> Preping index.html and data.js"
     mkdir -p /tmp/html/$FNAME_NO_SUFFIX
 
     DATAJS=${CLOUDFRONT}/html/$FNAME_NO_SUFFIX-$FILE_DATE/data.js
@@ -99,7 +99,7 @@ process_file () {
 
 INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
 REGION=%REGION%
-CLOUDFRONT=%CLOUDFRONT%
+CLOUDFRONT="http://"+%CLOUDFRONT%
 SQSQUEUE=%SQSQUEUE%
 WORKING_DIR=%WORKING_DIR%
 AUTOSCALINGGROUP=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE_ID" "Name=key,Values=aws:autoscaling:groupName" | jq -r '.Tags[0].Value')
