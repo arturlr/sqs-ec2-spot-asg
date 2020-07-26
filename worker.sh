@@ -17,12 +17,12 @@ update_status () {
     MSG=$2
     echo "{ \"code\": $CODE, \"msg\": \"$MSG\" }" > /tmp/${FNAME}.status    
     aws s3 cp --quiet /tmp/${FNAME}.status s3://$S3BUCKET/$S3KEY.status
-    logger "$0:---------------> Status changed to $MSG"
+    logger "$0:----> Status changed to $MSG"
 }
 
 process_file () {
     
-    logger "$0:-------------------------> Processing $FNAME"
+    logger "$0:----> Processing $FNAME"
 
     logger "$0: Running: aws autoscaling set-instance-protection --instance-ids $INSTANCE_ID --auto-scaling-group-name $AUTOSCALINGGROUP --protected-from-scale-in"
     aws autoscaling set-instance-protection --instance-ids $INSTANCE_ID --auto-scaling-group-name $AUTOSCALINGGROUP --protected-from-scale-in
@@ -43,11 +43,11 @@ process_file () {
     logger "$0: END model processing"
 
     # Unzipping the png files
-    logger "$0:---------------> Unzipping PNG files"
+    logger "$0:----> Unzipping PNG files"
     mkdir -p /tmp/png/$FNAME_NO_SUFFIX    
     unzip -j -q /tmp/$FNAME_NO_SUFFIX-png.zip -d /tmp/png/$FNAME_NO_SUFFIX
     # Unzipping the dcm files
-    logger "$0:---------------> Unzipping DCM files"
+    logger "$0:----> Unzipping DCM files"
     mkdir -p /tmp/dcm/$FNAME_NO_SUFFIX
     unzip -j -q /tmp/$FNAME -d /tmp/dcm/$FNAME_NO_SUFFIX
 
@@ -62,12 +62,12 @@ process_file () {
     done
 
     # Copying to the public bucket
-    logger "$0:---------------> Moving DCM abd PNG files to S3"
+    logger "$0:----> Moving DCM abd PNG files to S3"
     aws s3 cp --quiet --recursive /tmp/dcm/$FNAME_NO_SUFFIX s3://$S3BUCKET/public/dcm/$FNAME_NO_SUFFIX-$FILE_DATE/
     aws s3 cp --quiet --recursive /tmp/png/$FNAME_NO_SUFFIX s3://$S3BUCKET/public/png/$FNAME_NO_SUFFIX-$FILE_DATE/
 
     # html and data.js file
-    logger "$0:---------------> Preping index.html and data.js"
+    logger "$0:----> Preping index.html and data.js"
     mkdir -p /tmp/html/$FNAME_NO_SUFFIX
 
     DATAJS=${CLOUDFRONT}/html/$FNAME_NO_SUFFIX-$FILE_DATE/data.js
