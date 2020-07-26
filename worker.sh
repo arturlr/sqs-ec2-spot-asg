@@ -72,11 +72,11 @@ process_file () {
 
     DATAJS=${CLOUDFRONT}/html/$FNAME_NO_SUFFIX-$FILE_DATE/data.js
 
-    cp $WORKING_DIR/sapien-html/index.html /tmp/html/$FNAME_NO_SUFFIX
+    cp $WORKING_DIR/sapien/index.html /tmp/html/$FNAME_NO_SUFFIX
     sed -i "s|CLOUDFRONT|${CLOUDFRONT}|g" /tmp/html/$FNAME_NO_SUFFIX/index.html
     sed -i "s|DATAJS|${DATAJS}|g" /tmp/html/$FNAME_NO_SUFFIX/index.html
 
-    cp $WORKING_DIR/sapien-html/data.js /tmp/html/$FNAME_NO_SUFFIX
+    cp $WORKING_DIR/sapien/data.js /tmp/html/$FNAME_NO_SUFFIX
     sed -i "s|%DICOM_FILES%|${DCMS%???}|g" /tmp/html/$FNAME_NO_SUFFIX/data.js
     sed -i "s|%PNG_FILES%|${PNGS%???}|g" /tmp/html/$FNAME_NO_SUFFIX/data.js
 
@@ -147,6 +147,11 @@ while :;do
   if [ "$FEXT" = "zip" ]; then
 
     logger "$0: Found work. Details: S3KEY=$S3KEY, FNAME=$FNAME, FNAME_NO_SUFFIX=$FNAME_NO_SUFFIX, FEXT=$FEXT, S3KEY_NO_SUFFIX=$S3KEY_NO_SUFFIX"
+
+    if [ -z "$(aws s3 ls $S3BUCKET/public/sapien/sapiencovid_demo.js)" ]; then
+      logger "$0: Copying sapien plugin files to S3"
+      aws s3 cp --quiet --recursive $WORKING_DIR/sapien/ s3://$S3BUCKET/public/sapien/
+    fi
 
     aws s3 cp s3://$S3BUCKET/$S3KEY.status /tmp/${FNAME}.status
 
