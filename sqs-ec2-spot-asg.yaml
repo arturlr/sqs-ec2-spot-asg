@@ -1,6 +1,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: EC2 Auto Scaling group using EC2 Spot Instances, automatically scaling
   based on SQS queue depth
+  
 Mappings:
   CidrMappings:
     vpc:
