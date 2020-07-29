@@ -17,7 +17,7 @@ Globals:
     Handler: index.handler
     MemorySize: 256
     Runtime: python3.7
-    Timeout: 120
+    Timeout: 300
     Tracing: Active
     
 
@@ -40,7 +40,7 @@ Resources:
       - !Ref PyDicomLayer
       Policies:
         - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
-        - SQSPollerPolicy:
+        - SQSSendMessagePolicy:
             QueueName: !Ref queueName
         - S3CrudPolicy:
             BucketName: !Ref s3Bucket

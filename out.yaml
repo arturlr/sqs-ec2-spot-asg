@@ -16,7 +16,7 @@ Globals:
     Handler: index.handler
     MemorySize: 256
     Runtime: python3.7
-    Timeout: 120
+    Timeout: 300
     Tracing: Active
 Resources:
   PyDicomLayer:
@@ -31,12 +31,12 @@ Resources:
   Validation:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: s3://covid-bucket-app233508-dev/7f1070cf254ebf72a0e8866bab9e13f5
+      CodeUri: s3://covid-bucket-app233508-dev/69478c10f609ba00b539cb45a4609508
       Layers:
       - Ref: PyDicomLayer
       Policies:
       - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
-      - SQSPollerPolicy:
+      - SQSSendMessagePolicy:
           QueueName:
             Ref: queueName
       - S3CrudPolicy:
