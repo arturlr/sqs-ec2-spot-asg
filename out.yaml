@@ -1,0 +1,63 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: '"Dicom Lambda Validation \n"
+
+  '
+Parameters:
+  s3Bucket:
+    Type: String
+    Default: covid-bucket-app233508-dev
+  queueName:
+    Type: String
+    Default: L3-COVID19-Launcher-sqsQueue-12OAWLZ3FLUYY
+Globals:
+  Function:
+    AutoPublishAlias: live
+    Handler: index.handler
+    MemorySize: 256
+    Runtime: python3.7
+    Timeout: 120
+    Tracing: Active
+Resources:
+  PyDicomLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      Description: PyDicom
+      ContentUri: s3://covid-bucket-app233508-dev/47eb571c8c161ef2efad4b2c89907864
+      CompatibleRuntimes:
+      - python3.8
+      - python3.7
+      RetentionPolicy: Delete
+  Validation:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: s3://covid-bucket-app233508-dev/7f1070cf254ebf72a0e8866bab9e13f5
+      Layers:
+      - Ref: PyDicomLayer
+      Policies:
+      - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+      - SQSPollerPolicy:
+          QueueName:
+            Ref: queueName
+      - S3CrudPolicy:
+          BucketName:
+            Ref: s3Bucket
+      Environment:
+        Variables:
+          Bucket:
+            Ref: s3Bucket
+          queueUrl:
+            Fn::Join:
+            - ''
+            - - https://sqs.
+              - Fn::Sub: ${AWS::Region}
+              - .amazonaws.com/
+              - Fn::Sub: ${AWS::AccountId}
+              - /
+              - Ref: queueName
+Outputs:
+  ValidationArn:
+    Value:
+      Fn::GetAtt:
+      - Validation
+      - Arn
